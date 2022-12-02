@@ -1,6 +1,7 @@
-use eframe::{egui::{CentralPanel,ScrollArea,Separator,Context}, epi::App, run_native, NativeOptions};
+use eframe::{egui::{CentralPanel,ScrollArea,Context}, run_native, NativeOptions};
 use std::fs;
 use std::fs::metadata;
+use egui::widgets::Link;
 
 const APP_NAME: &str = "Archivos";
 
@@ -11,15 +12,33 @@ struct MyFiles {
 
 impl MyFiles {
     fn new()-> MyFiles {
-        Self {
-        path:String::from("/"),
-        prev_path:String::from("/")
+        if cfg!(windows) {
+            Self {
+            path:String::from("/"),
+            prev_path:String::from("/")
+            }
+        }else if cfg!(unix){
+            Self {
+            path:String::from("/"),
+            prev_path:String::from("/")
+            }
+        }else if cfg!(target_os = "macos"){
+            Self {
+            path:String::from("/"),
+            prev_path:String::from("/")
+            }
+        }else{
+            Self {
+            path:String::from("/"),
+            prev_path:String::from("/")
+            }
+
         }
     }
 }
 
-impl App for MyFiles{
-    fn update(&mut self, ctx:  &Context, _frame: &eframe::epi::Frame){
+impl eframe::App for MyFiles{
+    fn update(&mut self, ctx:  &Context, _frame: &mut eframe::Frame){
         CentralPanel::default().show(ctx, |ui| {
             if ui.button("return").clicked(){
                 self.path=self.prev_path.to_owned();
@@ -27,34 +46,34 @@ impl App for MyFiles{
             ScrollArea::vertical().show(ui, |ui| {
                 for file in fs::read_dir(&self.path).unwrap() {
                     let file_path =file.as_ref().unwrap().path().to_str().unwrap().to_string().to_owned();
-                    if ui.button(file_path.to_owned()).clicked(){
-                        if is_dir(file_path.to_owned()){
+                    let linku = Link::new(file_path.to_owned());
+
+                    if is_dir(file_path.to_owned()){
+                        if ui.link(file_path.to_owned()).clicked(){
                             self.prev_path=self.path.to_owned();
                             self.path = file_path.to_owned();
-                        }else{
+                        }
+                    ui.separator();
+                    }else{
+                        if ui.add(linku).clicked(){
                             println!("{}",file_path);
                         }
-                    }
-                        ui.separator();
-                }
+                    ui.separator();
+                }}
             });
         });
     }
-
-    fn name(&self)->&str{
-        &APP_NAME
-    }
 }
 
-
-fn main(){
+pub fn run_window(){
 
     let options = NativeOptions::default();
     let app =MyFiles::new();
 
     run_native(
-        Box::new(app),
+        APP_NAME,
         options,
+                Box::new(|_cc| Box::new(app)),
     );
 
 }
