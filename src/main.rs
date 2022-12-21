@@ -5,6 +5,8 @@ use egui::widgets::Link;
 use std::env;
 use directories::BaseDirs;
 use std::path::PathBuf;
+use egui_extras::RetainedImage;
+use egui;
 
 const APP_NAME: &str = "Files";
 
@@ -13,6 +15,7 @@ pub struct MyFiles {
     prev_path:String,
     search:String,
     type_to_search:Vec<String>,
+    direcrory_image:RetainedImage,
 }
 
 impl MyFiles {
@@ -22,6 +25,7 @@ impl MyFiles {
             prev_path:BaseDirs::new().unwrap().home_dir().parent().unwrap().to_str().unwrap().to_string(),
             search:"".to_owned(),
             type_to_search:ext_vec,
+            direcrory_image : RetainedImage::from_image_bytes("./image.png",include_bytes!("../directory.png")).unwrap(),
             }
     }
 }
@@ -37,10 +41,10 @@ impl eframe::App for MyFiles{
                 for file in fs::read_dir(&self.path).unwrap() {
                         let file_path = file.as_ref().unwrap().path().to_str().unwrap().to_string();
                         if self.search.len()==0{
-                            render_files(file_path,ui,&mut self.prev_path,&mut self.path,frame,&self.type_to_search);
+                            render_files(file_path,ui,ctx,&self.direcrory_image,&mut self.prev_path,&mut self.path,frame,&self.type_to_search);
                         }else{
                             if file_path.contains(&self.search){
-                                render_files(file_path,ui,&mut self.prev_path, &mut self.path, frame,&self.type_to_search);
+                                render_files(file_path,ui,ctx,&self.direcrory_image,&mut self.prev_path, &mut self.path, frame,&self.type_to_search);
                             }}
                 }
             });
@@ -69,12 +73,14 @@ fn is_dir(value:String)->bool{
     }
 }
 
-fn render_files(file_path:String, ui:&mut Ui, prev_path:&mut String, path:&mut String,frame: &mut eframe::Frame,extensions:&Vec<String>){
+fn render_files(file_path:String, ui:&mut Ui,ctx:&Context,img:&RetainedImage, prev_path:&mut String, path:&mut String,frame: &mut eframe::Frame,extensions:&Vec<String>){
     if is_dir(file_path.to_owned()){
+    ui.horizontal(|ui| {
+        ui.add(egui::Image::new(img.texture_id(ctx),[20.,12.]));
         if ui.add(Link::new(&file_path)).clicked(){
             *prev_path = PathBuf::from(&file_path).parent().unwrap().to_str().unwrap().to_string();
             *path = file_path.to_owned();
-        }
+        }});
         ui.separator();
     }else{
         if extensions.len()==0{
